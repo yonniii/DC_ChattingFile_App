@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="StopWaitProtocol:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/StopWaitProtocol_jar</output-path>
+    <root id="archive" name="StopWaitProtocol.jar">
+      <element id="module-output" name="StopWaitProtocol" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/jnetpcap.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
