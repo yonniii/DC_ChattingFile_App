@@ -1,5 +1,10 @@
 package stopwait;
 
+import org.jnetpcap.Pcap;
+import org.jnetpcap.packet.PcapPacket;
+import org.jnetpcap.packet.PcapPacketHandler;
+
+import javax.swing.*;
 import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -30,6 +35,31 @@ public class FileAppLayer implements BaseLayer{
     _FAPP_HEADER m_sHeader = new _FAPP_HEADER();
     // 11 12 13으로 타입
 
+
+    class SendFile_Thread implements Runnable {
+        byte[] data;
+        Pcap AdapterObject;
+        BaseLayer UpperLayer;
+
+        public SendFile_Thread(Pcap m_AdapterObject, BaseLayer m_UpperLayer) {
+            AdapterObject = m_AdapterObject;
+            UpperLayer = m_UpperLayer;
+        }
+
+        @Override
+        public void run() {
+            while(true) {
+                PcapPacketHandler<String> jpacketHandler = new PcapPacketHandler<String>() {
+                    public void nextPacket(PcapPacket packet, String user) {
+                        data = packet.getByteArray(0, packet.size());
+                        UpperLayer.Receive(data);
+                    }
+                };
+
+                AdapterObject.loop(100000,jpacketHandler,"");
+            }
+        }
+    }
 
 
     public FileAppLayer(String pName) {
@@ -90,7 +120,10 @@ public class FileAppLayer implements BaseLayer{
     }
 
     public boolean Send(String filename){
+//        SendFile_Thread thread = new SendFile_Thread()
+
         EthernetLayer ethernetLayer = (EthernetLayer) this.GetUnderLayer();
+        StopWaitDlg dlg = (StopWaitDlg) this.GetUpperLayer(0);
         System.out.println("FileApp - "+filename);
         byte[] buffer =  OpenFile(filename);
         byte[] totlen = intToByte4(buffer.length);
@@ -99,9 +132,11 @@ public class FileAppLayer implements BaseLayer{
         m_sHeader.fapp_totlen=totlen;
 
         System.out.println(new String(buffer));
+        dlg.progressBar.setMaximum(buffer.length);
+        dlg.progressBar.setValue(0);
 
         dataToSend = ObjToByte((byte)0x10,intToByte4(0),name,name.length); //첫번째 이름과 크기와 타입 보냄
-        ethernetLayer.SendFile(dataToSend,dataToSend.length);
+        ethernetLayer.SendFile(dataToSend, dataToSend.length);
 //        System.out.println(new String(dataToSend));
         System.out.println("FileApp - Send 1 filename");
 
@@ -113,14 +148,23 @@ public class FileAppLayer implements BaseLayer{
             dataToSend = ObjToByte((byte)0x11,intToByte4(length-sendIndex),frag,1448);
             ethernetLayer.SendFile(dataToSend,1460);
             System.out.println("FileApp - Send 2 midledata");
-            sendIndex-=1448;
+            int prog = length-sendIndex;
+//            dlg.updataBar(length-sendIndex);
+            SwingUtilities.invokeLater(() -> dlg.progressBar.setValue(prog));
+            sendIndex -=1448;
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
         }
         frag = new byte[sendIndex];
         System.arraycopy(buffer,length-sendIndex,frag,0,sendIndex);
         dataToSend = ObjToByte((byte)0x12,intToByte4(length-sendIndex),frag,sendIndex);
         ethernetLayer.SendFile(dataToSend,sendIndex+12);
         System.out.println("FileApp - Send 3 lastdata");
-
+        dlg.progressBar.setValue(buffer.length);
+//        dlg.progressBar.
         ResetHeader();
 
         return true;

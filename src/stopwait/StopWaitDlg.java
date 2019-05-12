@@ -4,10 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +14,7 @@ import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeListener;
 
 import javafx.scene.control.ComboBox;
 import org.jnetpcap.Pcap;
@@ -58,6 +56,7 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
     private JTextField fileNameText;
     private JButton fileSendButton;
     private JPanel progressBarPanel;
+    public JProgressBar progressBar;
 
     int adapterNumber = 0;
 
@@ -70,7 +69,7 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         m_LayerMgr.AddLayer(new ChatAppLayer("ChatApp"));
         m_LayerMgr.AddLayer(new FileAppLayer("FileApp"));
         m_LayerMgr.AddLayer(new StopWaitDlg("GUI"));// 레이어별로 객체를 생성하여 연결
-        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *ChatApp *FileApp ( *GUI ) ) ) ");
+        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *ChatApp ( *GUI ) *FileApp ( *GUI ) ) ) ");
 //        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *FileApp ( *GUI ) ) ) ");
     }
 
@@ -141,12 +140,12 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
                     byte byteData;
                     nlLayer.SetAdapterNumber(index);//선택된 콤보박스의 인덱스번호로 어답터넘버를 설정
                     try {
-                        String tmp = "";
+                        StringBuilder tmp = new StringBuilder();
                         for (int i = 0; i < macList.get(index).getHardwareAddress().length; i++) {
                             byteData = macList.get(index).getHardwareAddress()[i];
 //                            tmp += Integer.toString((byteData & 0xff)+0x100, 16).substring(1);
-                            tmp += String.format("%02X%s", macList.get(index).getHardwareAddress()[i], (i < tmp.length() - 1) ? "" : "");
-                            tmp += "-"; // mac주소를 byte type에서 string type으로 변환
+                            tmp.append(String.format("%02X%s", macList.get(index).getHardwareAddress()[i], (i < tmp.length() - 1) ? "" : ""));
+                            tmp.append("-"); // mac주소를 byte type에서 string type으로 변환
                         }
                         System.out.println(tmp);
                         srcAddress.setText(tmp.substring(0, tmp.length() - 1)); // srcadress 창에 주소 띄움
@@ -289,18 +288,51 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         fileSendButton.setBounds(262, 55, 94, 20);
         filepanel.add(fileSendButton);
 
-        progressBarPanel = new JPanel();
-        progressBarPanel.setLayout(null);
-        progressBarPanel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-        progressBarPanel.setBounds(9, 55, 250, 20);
-        filepanel.add(progressBarPanel);
+//        progressBarPanel = new JPanel();
+//        progressBarPanel.setLayout(null);
+//        progressBarPanel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+//        progressBarPanel.setBounds(9, 55, 250, 20);
+//        filepanel.add(progressBarPanel);
+//
+//        JProgressBar progressBar = new JProgressBar();
+//        progressBar.setBounds(0, 0, 250, 20);
+//        progressBarPanel.add(progressBar);
 
-        JProgressBar progressBar = new JProgressBar();
-        progressBar.setBounds(0, 0, 250, 20);
-        progressBarPanel.add(progressBar);
+        progressBar = new JProgressBar();
+        progressBar.setBounds(9, 56, 250, 20);
+        filepanel.add(progressBar);
+        progressBar.setMinimum(0);
 
         setVisible(true);
 
+    }
+
+
+
+//    private class Task implements Runnable {
+//        private static final long SLEEP_TIME = 100;
+//
+//        @Override
+//        public void run() {
+//            for (int i = 0; i <= 100; i++) {
+//                final int progress = i;
+//                SwingUtilities.invokeLater(new Runnable() {
+//                    public void run() {
+//                        progressBar.setValue(progress);
+//
+//                    }
+//                });
+//                try {
+//                    Thread.sleep(SLEEP_TIME);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
+
+    public void updataBar(int value){
+        progressBar.setValue(value);
     }
 
     public boolean Receive(byte[] input) {
