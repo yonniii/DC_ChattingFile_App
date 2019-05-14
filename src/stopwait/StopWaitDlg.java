@@ -145,7 +145,6 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         for (int i = 0; i < macList.size(); i++) {
             NICComboBox.addItem(macList.get(i).getDescription());//콤보박스에 추가
         }
-//        macList.get(1).getHardwareAddress()
 
 
         NICComboBox.addItemListener(new ItemListener() {
@@ -324,7 +323,7 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
     void set_progressBar(int max, int current) {
         if ((int) ((float) current / (float) max * 100) == 100) {
             progressBar.setValue((int) ((float) current / (float) max * 100));
-            JOptionPane.showMessageDialog(null, "sucess", "SUCESS_DOWNLOAD", 1);
+//            JOptionPane.showMessageDialog(null, "sucess", "SUCESS_DOWNLOAD", 1);
         } else {
             progressBar.setValue((int) ((float) current / (float) max * 100));
         }
