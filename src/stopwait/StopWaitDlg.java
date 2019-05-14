@@ -19,6 +19,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
 import javafx.scene.control.ComboBox;
+import javafx.scene.paint.Stop;
 import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapIf;
 
@@ -59,6 +60,7 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
     private JButton fileSendButton;
     private JPanel progressBarPanel;
 
+    public JProgressBar progressBar;
     int adapterNumber = 0;
 
     String Text;
@@ -70,8 +72,22 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         m_LayerMgr.AddLayer(new ChatAppLayer("ChatApp"));
         m_LayerMgr.AddLayer(new FileAppLayer("FileApp"));
         m_LayerMgr.AddLayer(new StopWaitDlg("GUI"));// 레이어별로 객체를 생성하여 연결
-        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *ChatApp *FileApp ( *GUI ) ) ) ");
+        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *ChatApp ( *GUI ) *FileApp ( *GUI ) ) ) ");
 //        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *FileApp ( *GUI ) ) ) ");
+
+
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+//                    StopWaitDlg frame = new StopWaitDlg("GUI");
+                    StopWaitDlg frame = (StopWaitDlg) m_LayerMgr.GetLayer("GUI");
+                    frame.setVisible(true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
     }
 
     public StopWaitDlg(String pName) {
@@ -129,7 +145,6 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         for (int i = 0; i < macList.size(); i++) {
             NICComboBox.addItem(macList.get(i).getDescription());//콤보박스에 추가
         }
-//        macList.get(1).getHardwareAddress()
 
 
         NICComboBox.addItemListener(new ItemListener() {
@@ -247,7 +262,7 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
                 JFileChooser fileChooser = new JFileChooser();
 
                 int result = fileChooser.showOpenDialog(window);
-                if(result == JFileChooser.APPROVE_OPTION) {
+                if (result == JFileChooser.APPROVE_OPTION) {
                     File selectedFile = fileChooser.getSelectedFile();
                     fileNameText.setText(selectedFile.toString());
                     System.out.println(selectedFile);
@@ -274,9 +289,11 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String[] name = fileNameText.getText().split("\\\\");
-                ChattingArea.append(new String("[SEND] :" + name[name.length-1] + "을 전송합니다.\n"));
+                ChattingArea.append(new String("[SEND] :" + name[name.length - 1] + "을 전송합니다.\n"));
                 fileAppLayer.Send(fileNameText.getText());
-
+                Progress_Thread thread = new Progress_Thread();
+                Thread object = new Thread(thread);
+                object.start();
 //                if (Setting_Button.getText().equals("Reset")) {
 ////                    ChattingArea.append(new String("[SEND] :" + ChattingWrite.getText() + "\n")); // 보내려는 메세지를 출력
 ////                    GetUnderLayer().Send(ChattingWrite.getText().getBytes(), ChattingWrite.getText().length()); // 아래계층인 챗앱레이어에 데이터 보냄
@@ -295,12 +312,59 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         progressBarPanel.setBounds(9, 55, 250, 20);
         filepanel.add(progressBarPanel);
 
-        JProgressBar progressBar = new JProgressBar();
+        progressBar = new JProgressBar();
         progressBar.setBounds(0, 0, 250, 20);
         progressBarPanel.add(progressBar);
 
         setVisible(true);
 
+    }
+
+    void set_progressBar(int max, int current) {
+        if ((int) ((float) current / (float) max * 100) == 100) {
+            progressBar.setValue((int) ((float) current / (float) max * 100));
+//            JOptionPane.showMessageDialog(null, "sucess", "SUCESS_DOWNLOAD", 1);
+        } else {
+            progressBar.setValue((int) ((float) current / (float) max * 100));
+        }
+
+    }
+
+    class Progress_Thread implements Runnable {
+
+
+        public Progress_Thread() {
+
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (fileNameText.getText()!="") {
+                    progressBar.setValue(fileAppLayer.getFileStatus());
+                    progressBar.setStringPainted(true);
+                    Thread.sleep(0);
+                    if (fileAppLayer.getFileStatus() == 100) {
+                        progressBar.setValue(fileAppLayer.getFileStatus());
+                        break;
+                    }
+                }
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+                fileAppLayer.setFileStatus(0);
+            } finally {
+                try {
+                    if (fileAppLayer.getFileStatus() == 100) {
+                        fileAppLayer.setFileStatus(0);
+                    } else {
+                        fileAppLayer.setFileStatus(0);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    fileAppLayer.setFileStatus(0);
+                }
+            }
+        }
     }
 
     public boolean Receive(byte[] input) {

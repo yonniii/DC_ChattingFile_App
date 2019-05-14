@@ -86,14 +86,14 @@ public class EthernetLayer implements BaseLayer {
         return buf;
     }
 
-    private boolean isChatType(byte[] input){ //chatHeader의 타입이 00~03은 chat 10~12는 file
-        byte type = input[2];
-        if(type<0x10){
-            return true;
-        }else{
-            return false;
-        }
-    }
+//    private boolean isChatType(byte[] input){ //chatHeader의 타입이 00~03은 chat 10~12는 file
+//        byte type = input[2];
+//        if(type<0x10){
+//            return true;
+//        }else{
+//            return false;
+//        }
+//    }
 
     private boolean SendChat(byte[] input, int length){
 //        int totlen = byteToint(input[0], input[1]);
@@ -121,13 +121,7 @@ public class EthernetLayer implements BaseLayer {
     }
 
     public boolean Send(byte[] input, int length) {//아래 레이어인 NILayer에 데이터에 헤더를 붙여 전송하는 함수
-
-        if(isChatType(input)){
-            SendChat(input, length);
-        }else{
-            SendFile(input, length);
-        }
-
+        SendChat(input, length);
         return true;
     }
 
@@ -203,14 +197,14 @@ public class EthernetLayer implements BaseLayer {
         }
 
         if (input[12] == (byte) 0x20 && input[13] == (byte) 0x80) {
-            byte[] ac = creatAck(input);
-            System.out.println("ack는?");
-            for (int i = 0; i < 14; i++) {
-                System.out.print(ac[i] + " ");
-            }
-            System.out.println();
-            niLayer.Send(creatAck(input), 14);
-            System.out.println("Ethernet - Ack 보냄");
+//            byte[] ac = creatAck(input);
+//            System.out.println("ack는?");
+//            for (int i = 0; i < 14; i++) {
+//                System.out.print(ac[i] + " ");
+//            }
+//            System.out.println();
+//            niLayer.Send(creatAck(input), 14);
+//            System.out.println("Ethernet - Ack 보냄");
             System.out.println("Ethernet - Receive" + new String(input));
             chatAppLayer.Receive(RemoveCappHeader(input, input.length));
             return true;

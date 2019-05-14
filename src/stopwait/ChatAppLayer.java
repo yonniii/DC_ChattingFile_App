@@ -68,14 +68,14 @@ public class ChatAppLayer implements BaseLayer {
             System.out.println("ChatApp - Send 0x01");
             sendIndex -= 10;
 
-            while (!isReceiveACK_Chat) {
-                try {
-                    Thread.sleep(800);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            isReceiveACK_Chat = false;
+//            while (!isReceiveACK_Chat) {
+//                try {
+//                    Thread.sleep(800);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//            isReceiveACK_Chat = false;
 
             while (true) {
                 if (sendIndex < 11)
@@ -84,41 +84,41 @@ public class ChatAppLayer implements BaseLayer {
                 this.GetUnderLayer().Send(buf, 14);
                 System.out.println("ChatApp - Send 0x02");
                 sendIndex -= 10;
-                while (!isReceiveACK_Chat) {
-                    try {
-                        Thread.sleep(800);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                isReceiveACK_Chat = false;
+//                while (!isReceiveACK_Chat) {
+//                    try {
+//                        Thread.sleep(800);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//                isReceiveACK_Chat = false;
             }
 
             buf = ObjToByte(input, length - sendIndex, sendIndex, totlen, (byte) 0x03);
             this.GetUnderLayer().Send(buf, buf.length);
             System.out.println("ChatApp - Send 0x03");
-            while (!isReceiveACK_Chat) {
-                try {
-                    Thread.sleep(800);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            isReceiveACK_Chat = false;
+//            while (!isReceiveACK_Chat) {
+//                try {
+//                    Thread.sleep(800);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//            isReceiveACK_Chat = false;
             return true;
 
         } else {
 
             buf = ObjToByte(input, 0, length, totlen, (byte) 0x00);
             this.GetUnderLayer().Send(buf, 14);
-            while (!isReceiveACK_Chat) {
-                try {
-                    Thread.sleep(800);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            isReceiveACK_Chat = false;
+//            while (!isReceiveACK_Chat) {
+//                try {
+//                    Thread.sleep(800);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//            isReceiveACK_Chat = false;
             return true;
 
         }
