@@ -240,20 +240,20 @@ public class FileAppLayer implements BaseLayer {
     String temp_filename;
     byte[] receive_data_buffer;
     int receive_packet_num = 0;
-
-    private void OutputFile(byte[] input) {
+    private void OutputFile() {
         BufferedOutputStream bs = null;
-
         try {
+            temp_filename = temp_filename.trim();
             bs = new BufferedOutputStream(new FileOutputStream(temp_filename));
-            bs.write(input, 0, input.length); //Byte형으로만 넣을 수 있음
+            bs.write(receive_data_buffer);
         } catch (Exception e) {
             System.out.println("in FileApp OutputFile 에서...."+e);
-        } finally {
+        }
+        finally {
             try {
                 bs.close(); //반드시 닫는다.
             } catch (Exception e) {
-                System.out.println(e);
+                System.out.println("in FileApp OutputFile finally 에서...."+e);
             }
         }
     }
@@ -320,7 +320,8 @@ public class FileAppLayer implements BaseLayer {
         } else if (Arrays.equals(byte_Packet_type, PACKET_TYPE_LAST)) { //마지막 패킷일 때
             System.out.println("FileApp - Receive 0x12");
             System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, int_last_packet_size);
-            OutputFile(receive_data_buffer);
+            System.out.println(temp_filename);
+            OutputFile();
             Received_packet_count++;
             String msg = temp_filename + "을 받았습니다.";
             this.GetUpperLayer(0).Receive(msg.getBytes());
