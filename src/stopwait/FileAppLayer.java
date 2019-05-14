@@ -258,10 +258,10 @@ public class FileAppLayer implements BaseLayer {
         }
     }
 
-    private byte[] RemoveCappHeader(byte[] input, int length) {//receive할 때 사용 / 데이터에 붙어있는 4바이트의 헤더를 제거
-        byte[] buf = new byte[length - 12];//input보다 4만큼 작은 배열 선언
-        for (int i = 0; i < length - 12; i++) {
-            buf[i] = input[i + 12];//배열에 헤더 이후의 데이터를 옮김
+    private byte[] RemoveCappHeader(byte[] input, int length) {//receive할 때 사용 / 데이터에 붙어있는 12바이트의 헤더를 제거
+        byte[] buf = new byte[length - HEADER_SIZE];//input보다 4만큼 작은 배열 선언
+        for (int i = 0; i < length - HEADER_SIZE; i++) {
+            buf[i] = input[i + HEADER_SIZE];//배열에 헤더 이후의 데이터를 옮김
         }
         return buf;
     }
