@@ -38,36 +38,9 @@ public class FileAppLayer implements BaseLayer {
         }
     }
 
-    //    public boolean isReceiveACK_File = false;
     _FAPP_HEADER m_sHeader = new _FAPP_HEADER();
 
     // 11 12 13으로 타입
-
-
-//    class SendFile_Thread implements Runnable {
-//        byte[] data;
-//        Pcap AdapterObject;
-//        BaseLayer UpperLayer;
-//
-//        public SendFile_Thread(Pcap m_AdapterObject, BaseLayer m_UpperLayer) {
-//            AdapterObject = m_AdapterObject;
-//            UpperLayer = m_UpperLayer;
-//        }
-//
-//        @Override
-//        public void run() {
-//            while (true) {
-//                PcapPacketHandler<String> jpacketHandler = new PcapPacketHandler<String>() {
-//                    public void nextPacket(PcapPacket packet, String user) {
-//                        data = packet.getByteArray(0, packet.size());
-//                        UpperLayer.Receive(data);
-//                    }
-//                };
-//
-//                AdapterObject.loop(100000, jpacketHandler, "");
-//            }
-//        }
-//    } //안쓸듯??
 
 
     public FileAppLayer(String pName) {
@@ -125,17 +98,6 @@ public class FileAppLayer implements BaseLayer {
         return buf;
     }
 
-    //    private boolean WaitAck(){
-//        while (!isReceiveACK_File) {
-//            try {
-//                Thread.sleep(800);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        isReceiveACK_File = false;
-//        return true;
-//    }
     private byte[] OpenFile(String filePath) {
         BufferedInputStream bs = null;
         byte[] b = null;
@@ -145,8 +107,6 @@ public class FileAppLayer implements BaseLayer {
             System.out.println(b.length);
             while (bs.read(b) != -1) {
             }
-//            System.out.println(new String(b)); //필요에 따라 스트링객체로 변환
-
         } catch (Exception e) {
             System.out.println("in FileApp OpenFile" + e);
         } finally {
@@ -183,25 +143,6 @@ public class FileAppLayer implements BaseLayer {
         byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
         System.out.println("FileApp - Send 1 filename");
         ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //첫번째 패킷 전송
-//        int length = byte_file_Data.length;
-//        int sendIndex = byte_file_Data.length;
-//        byte[] frag = new byte[1448];
-//        while (sendIndex > 1448) {
-//            System.arraycopy(byte_file_Data, length - sendIndex, frag, 0, 1448);
-//            byte_buffer_ToSend = ObjToByte((byte) 0x11, intToByte4(length - sendIndex), frag, 1448);
-////            file_status = ((float) (i + 1) / (float) packet_count) * 100;
-//            ethernet.SendFile(byte_buffer_ToSend, 1460);
-//            System.out.println("FileApp - Send 2 midledata");
-//            int prog = length - sendIndex;
-//            SwingUtilities.invokeLater(() -> dlg.progressBar.setValue(prog));
-//            sendIndex -= 1448;
-//        }
-//        frag = new byte[sendIndex];
-//        System.arraycopy(byte_file_Data, length - sendIndex, frag, 0, sendIndex);
-//        byte_buffer_ToSend = ObjToByte((byte) 0x12, intToByte4(length - sendIndex), frag, sendIndex);
-//        ethernet.SendFile(byte_buffer_ToSend, sendIndex + 12);
-//        System.out.println("FileApp - Send 3 lastdata");
-//        dlg.progressBar.setValue(byte_file_Data.length);
         int int_seq_num; //중간 패킷의 수
         int int_last_packet_size; //마지막 패킷의 사이즈
         if ((int_last_packet_size = int_Data_totlen % MAX_DATA_SIZE) == 0) {
@@ -267,33 +208,6 @@ public class FileAppLayer implements BaseLayer {
     }
 
     public int Received_packet_count=0;
-
-//    public boolean Receive(byte[] input) {
-//        if (input.length < 12)
-//            return false;
-////        byte[] type = {input[4],input[5]};
-//        int totlen = byteToint4(input[0], input[1], input[2], input[3]);
-//        if (input[4] == 0x10 && input[5] == 0x10) {
-//            System.out.println("FileApp - Receive 0x10");
-//            inputBuffer = ByteBuffer.allocate(totlen);
-//            temp_filename = new String(RemoveCappHeader(input, input.length));
-//        } else if (input[4] == 0x11 && input[5] == 0x11) {
-//            System.out.println("FileApp - Receive 0x11");
-//            inputBuffer.put(RemoveCappHeader(input, 1460));
-//            Received_packet_count++;
-//        } else if (input[4] == 0x12 && input[5] == 0x12) {
-//            System.out.println("FileApp - Receive 0x12");
-//            inputBuffer.put(RemoveCappHeader(input, totlen % 1448 + 12));
-//            Received_packet_count++;
-//            String msg = temp_filename + "을 받았습니다.";
-//            OutputFile(inputBuffer.array());
-//            this.GetUpperLayer(0).Receive(msg.getBytes());
-////            this.GetUpperLayer(0).Receive(inputBuffer.array());
-//            inputBuffer = ByteBuffer.allocate(0);
-//        }
-//
-//        return false;
-//    }
 
 
     public boolean Receive(byte[] input) {
