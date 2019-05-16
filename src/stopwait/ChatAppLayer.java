@@ -42,7 +42,7 @@ public class ChatAppLayer implements BaseLayer {
 
 
     public byte[] ObjToByte(byte[] data, int dataIndex, int length, byte[] temp_totlen, byte type) {
-        byte[] buf = new byte[14];
+        byte[] buf = new byte[MAX_DATA_SIZE+HEADER_SIZE];
         m_sHeader.capp_totlen = temp_totlen;
         m_sHeader.capp_type = type;
         buf[0] = m_sHeader.capp_totlen[0];
@@ -55,18 +55,22 @@ public class ChatAppLayer implements BaseLayer {
         return buf;
     }
 
+    final int MAX_DATA_SIZE = 1456;
+    final int HEADER_SIZE = 4;
+
+
     public boolean Send(byte[] input, int length) {
         byte[] buf;
         byte[] totlen = intToByte2(length);
         EthernetLayer ethernet = (EthernetLayer) this.GetUnderLayer();
 
-        if (length > 10) {
+        if (length > MAX_DATA_SIZE) {
             int sendIndex = length;
 
-            buf = ObjToByte(input, 0, 10, totlen, (byte) 0x01);
-            this.GetUnderLayer().Send(buf, 14);
+            buf = ObjToByte(input, 0, MAX_DATA_SIZE, totlen, (byte) 0x01);
+            this.GetUnderLayer().Send(buf, MAX_DATA_SIZE+HEADER_SIZE);
             System.out.println("ChatApp - Send 0x01");
-            sendIndex -= 10;
+            sendIndex -= MAX_DATA_SIZE;
 
 //            while (!isReceiveACK_Chat) {
 //                try {
@@ -78,12 +82,12 @@ public class ChatAppLayer implements BaseLayer {
 //            isReceiveACK_Chat = false;
 
             while (true) {
-                if (sendIndex < 11)
+                if (sendIndex < MAX_DATA_SIZE+1)
                     break;
-                buf = ObjToByte(input, length - sendIndex, 10, totlen, (byte) 0x02);
-                this.GetUnderLayer().Send(buf, 14);
+                buf = ObjToByte(input, length - sendIndex, MAX_DATA_SIZE, totlen, (byte) 0x02);
+                this.GetUnderLayer().Send(buf, MAX_DATA_SIZE+HEADER_SIZE);
                 System.out.println("ChatApp - Send 0x02");
-                sendIndex -= 10;
+                sendIndex -= MAX_DATA_SIZE;
 //                while (!isReceiveACK_Chat) {
 //                    try {
 //                        Thread.sleep(800);
@@ -110,7 +114,7 @@ public class ChatAppLayer implements BaseLayer {
         } else {
 
             buf = ObjToByte(input, 0, length, totlen, (byte) 0x00);
-            this.GetUnderLayer().Send(buf, 14);
+            this.GetUnderLayer().Send(buf, MAX_DATA_SIZE+HEADER_SIZE);
 //            while (!isReceiveACK_Chat) {
 //                try {
 //                    Thread.sleep(800);
@@ -125,35 +129,35 @@ public class ChatAppLayer implements BaseLayer {
     }
 
     public byte[] RemoveCappHeader(byte[] input, int length) {//receive할 때 사용 / 데이터에 붙어있는 4바이트의 헤더를 제거
-        byte[] buf = new byte[length - 4];//input보다 4만큼 작은 배열 선언
-        for (int i = 0; i < length - 4; i++) {
-            buf[i] = input[i + 4];//배열에 헤더 이후의 데이터를 옮김
+        byte[] buf = new byte[length - HEADER_SIZE];//input보다 4만큼 작은 배열 선언
+        for (int i = 0; i < length - HEADER_SIZE; i++) {
+            buf[i] = input[i + HEADER_SIZE];//배열에 헤더 이후의 데이터를 옮김
         }
         return buf;
     }
 
     public synchronized boolean Receive(byte[] input) {
-        if (input.length < 5)
+        if (input.length < HEADER_SIZE+1)
             return false;
         byte type = input[2];
         int totlen = byteToint(input[0], input[1]);
         if (type != (byte) 0x00 && type != (byte) 0x01 && type != (byte) 0x02 && type != (byte) 0x03)
             return false;
-        if (totlen > 10) {
+        if (totlen > MAX_DATA_SIZE) {
             if (input[2] == (byte) 0x01) {
                 System.out.println("ChatApp - Receive 0x01");
                 buffer = ByteBuffer.allocate(totlen);
                 System.out.println("after clear 0x01" + buffer.toString());
-                buffer.put(RemoveCappHeader(input, 14));
+                buffer.put(RemoveCappHeader(input, MAX_DATA_SIZE+HEADER_SIZE));
                 return true;
             } else if (input[2] == (byte) 0x02) {
                 System.out.println("ChatApp - Receive 0x02");
-                buffer.put(RemoveCappHeader(input, 14));
+                buffer.put(RemoveCappHeader(input, MAX_DATA_SIZE+HEADER_SIZE));
                 return true;
             } else if (input[2] == (byte) 0x03) {
                 System.out.println("ChatApp - Receive 0x03");
                 System.out.println(((totlen/10)+1)*10 + " / " + totlen +" / "+(totlen%10+4));
-                buffer.put(RemoveCappHeader(input, totlen%10+4));
+                buffer.put(RemoveCappHeader(input, totlen%MAX_DATA_SIZE+HEADER_SIZE));
                 this.GetUpperLayer(0).Receive(buffer.array());
 //                buffer = ByteBuffer.allocate(totlen);
                 System.out.println("after clear 0x03" + buffer.toString());
