@@ -119,6 +119,7 @@ public class FileAppLayer implements BaseLayer {
         System.arraycopy(m_sHeader.fapp_totlen, 0, buf, 0, 4);
         System.arraycopy(m_sHeader.fapp_type, 0, buf, 4, 2);
         System.arraycopy(m_sHeader.fapp_seq_num, 0, buf, 8, 4);
+        buf[6] = m_sHeader.fapp_msg_type;
         for (int i = 0; i < size; i++) {
             buf[i + HEADER_SIZE] = input[i];
         }
@@ -163,9 +164,10 @@ public class FileAppLayer implements BaseLayer {
     float file_status = 0;
     private final int MAX_DATA_SIZE = 1448;
     final int HEADER_SIZE = 12;
-    final byte[] PACKET_TYPE_FIRST = {(byte) 0x10, (byte) 0x10};
-    final byte[] PACKET_TYPE_MID = {(byte) 0x11, (byte) 0x11};
-    final byte[] PACKET_TYPE_LAST = {(byte) 0x12, (byte) 0x12};
+    final byte[] PACKET_TYPE_NO_FRAG = {(byte) 0x10, (byte) 0x10};
+    final byte[] PACKET_TYPE_FIRST = {(byte) 0x11, (byte) 0x11};
+    final byte[] PACKET_TYPE_MID = {(byte) 0x12, (byte) 0x12};
+    final byte[] PACKET_TYPE_LAST = {(byte) 0x13, (byte) 0x13};
 
     public boolean Send(String filepath) {
         EthernetLayer ethernet = (EthernetLayer) this.GetUnderLayer();
@@ -180,56 +182,59 @@ public class FileAppLayer implements BaseLayer {
         byte[] byte_buffer_data_withHEADER; //자른 배열에 헤더를 붙이고, underLayer에 보낼 배열
         m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
 
-        byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
-        System.out.println("FileApp - Send 1 filename");
-        ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //첫번째 패킷 전송
-//        int length = byte_file_Data.length;
-//        int sendIndex = byte_file_Data.length;
-//        byte[] frag = new byte[1448];
-//        while (sendIndex > 1448) {
-//            System.arraycopy(byte_file_Data, length - sendIndex, frag, 0, 1448);
-//            byte_buffer_ToSend = ObjToByte((byte) 0x11, intToByte4(length - sendIndex), frag, 1448);
-////            file_status = ((float) (i + 1) / (float) packet_count) * 100;
-//            ethernet.SendFile(byte_buffer_ToSend, 1460);
-//            System.out.println("FileApp - Send 2 midledata");
-//            int prog = length - sendIndex;
-//            SwingUtilities.invokeLater(() -> dlg.progressBar.setValue(prog));
-//            sendIndex -= 1448;
-//        }
-//        frag = new byte[sendIndex];
-//        System.arraycopy(byte_file_Data, length - sendIndex, frag, 0, sendIndex);
-//        byte_buffer_ToSend = ObjToByte((byte) 0x12, intToByte4(length - sendIndex), frag, sendIndex);
-//        ethernet.SendFile(byte_buffer_ToSend, sendIndex + 12);
-//        System.out.println("FileApp - Send 3 lastdata");
-//        dlg.progressBar.setValue(byte_file_Data.length);
-        int int_seq_num; //중간 패킷의 수
-        int int_last_packet_size; //마지막 패킷의 사이즈
-        if ((int_last_packet_size = int_Data_totlen % MAX_DATA_SIZE) == 0) {
-            int_seq_num = int_Data_totlen / MAX_DATA_SIZE - 1;
-            int_last_packet_size = MAX_DATA_SIZE;
-        } else {
-            int_seq_num = int_Data_totlen / MAX_DATA_SIZE;
-        }
-        byte_buffer_ToSend = new byte[MAX_DATA_SIZE];
+        if (int_Data_totlen > MAX_DATA_SIZE) { //단편화 했을 때의 데이터 전송
 
-        for (int i = 0; i <= int_seq_num; i++) {
-            try {
-                Thread.sleep((long)1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            m_sHeader.fapp_msg_type = (byte) 0x00;
+            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
+            System.out.println("FileApp - Send 1 filename");
+            ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //첫번째 패킷 전송
+            int int_seq_num; //중간 패킷의 수
+            int int_last_packet_size; //마지막 패킷의 사이즈
+            if ((int_last_packet_size = int_Data_totlen % MAX_DATA_SIZE) == 0) {
+                int_seq_num = int_Data_totlen / MAX_DATA_SIZE - 1;
+                int_last_packet_size = MAX_DATA_SIZE;
+            } else {
+                int_seq_num = int_Data_totlen / MAX_DATA_SIZE;
             }
-            if (i != int_seq_num) { //중간패킷일 때
-                System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, MAX_DATA_SIZE);
-                byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_MID, intToByte4(i), byte_buffer_ToSend, MAX_DATA_SIZE);
-                System.out.println("FileApp - Send 2 midledata" + i + "번 패킷");
-                ethernet.SendFile(byte_buffer_data_withHEADER, MAX_DATA_SIZE + HEADER_SIZE);
-            } else { //마지막 패킷일 때
-                System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, int_last_packet_size);
-                byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_LAST, intToByte4(i), byte_buffer_ToSend, int_last_packet_size);
-                System.out.println("FileApp - Send 3 lastdata" + i + "번 패킷 마지막~~~~~~");
-                ethernet.SendFile(byte_buffer_data_withHEADER, int_last_packet_size + HEADER_SIZE);
+            byte_buffer_ToSend = new byte[MAX_DATA_SIZE];
+
+            m_sHeader.fapp_msg_type = (byte) 0x01;
+            for (int i = 0; i <= int_seq_num; i++) {
+                try {
+                    Thread.sleep((long) 1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (i != int_seq_num) { //처음~중간패킷일 때
+                    System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, MAX_DATA_SIZE);
+                    if (i == 0) { //첫번째 패킷일 때
+                        byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(i), byte_buffer_ToSend, MAX_DATA_SIZE);
+                        System.out.println("FileApp - Send 1 first data" + i + "번 패킷");
+                    } else { //중간 패킷일 때
+                        byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_MID, intToByte4(i), byte_buffer_ToSend, MAX_DATA_SIZE);
+                        System.out.println("FileApp - Send 2 midle data" + i + "번 패킷");
+                    }
+                    ethernet.SendFile(byte_buffer_data_withHEADER, MAX_DATA_SIZE + HEADER_SIZE);
+                } else { //마지막 패킷일 때
+                    System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, int_last_packet_size);
+                    byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_LAST, intToByte4(i), byte_buffer_ToSend, int_last_packet_size);
+                    System.out.println("FileApp - Send 3 last data" + i + "번 패킷 마지막~~~~~~");
+                    ethernet.SendFile(byte_buffer_data_withHEADER, int_last_packet_size + HEADER_SIZE);
+                }
+                file_status = ((float) (i + 1) / (float) int_seq_num) * 100;
             }
-            file_status = ((float) (i + 1) / (float) int_seq_num) * 100;
+
+
+        } else { //단편화 하지 않은 데이터 전송
+            m_sHeader.fapp_msg_type = (byte) 0x00;
+            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
+            System.out.println("FileApp - Send 0 filename");
+            ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //단편화 하지 않음 , 파일정보 전송
+
+            m_sHeader.fapp_msg_type = (byte) 0x01;
+            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(1), byte_file_Data, int_Data_totlen);
+            System.out.println("FileApp - Send 0 no Fragmentaion data");
+            ethernet.SendFile(byte_buffer_data_withHEADER, int_Data_totlen + HEADER_SIZE);
         }
         ResetHeader();
         return true;
@@ -303,29 +308,47 @@ public class FileAppLayer implements BaseLayer {
         byte[] byte_Packet_type = {input[4], input[5]};
         int int_last_packet_size; //마지막 패킷의 사이즈
         int int_seq_num;
-        int_seq_num = byteToint4(input[8],input[9],input[10],input[11]);
-
+        int_seq_num = byteToint4(input[8], input[9], input[10], input[11]);
+        byte msg_type = input[6];
         if ((int_last_packet_size = int_Data_totlen % MAX_DATA_SIZE) == 0) {
             int_last_packet_size = MAX_DATA_SIZE;
         }
 
-        if (Arrays.equals(byte_Packet_type, PACKET_TYPE_FIRST)) { //첫번째 패킷일 때
-            System.out.println("FileApp - Receive 0x10");
+        if (msg_type == (byte) 0x00) {
+            System.out.println("FileApp - Receive fileNAME");
             receive_data_buffer = new byte[int_Data_totlen];
             temp_filename = new String(RemoveCappHeader(input, input.length)); //데이터에서 파일이름만 추출하여 필드에 저장
-        } else if (Arrays.equals(byte_Packet_type, PACKET_TYPE_MID)) { //중간 패킷일 때
-            System.out.println("FileApp - Receive 0x11" + int_seq_num+"번째 패킷");
-            System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, MAX_DATA_SIZE);
-            Received_packet_count++;
-        } else if (Arrays.equals(byte_Packet_type, PACKET_TYPE_LAST)) { //마지막 패킷일 때
-            System.out.println("FileApp - Receive 0x12");
-            System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, int_last_packet_size);
+            return true;
+        }
+
+        if (int_Data_totlen > MAX_DATA_SIZE) {
+
+            if (Arrays.equals(byte_Packet_type, PACKET_TYPE_LAST)) { //마지막 패킷일 때
+                System.out.println("FileApp - Receive 0x12");
+                System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, int_last_packet_size);
+                System.out.println(temp_filename);
+                OutputFile();
+                Received_packet_count++;
+                String msg = temp_filename + "을 받았습니다.";
+                this.GetUpperLayer(0).Receive(msg.getBytes());
+                receive_data_buffer = null;
+            } else { //처음~중간 패킷일 때
+                System.out.println("FileApp - Receive 0x11 / 0x12 " + int_seq_num + "번째 패킷");
+                System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, MAX_DATA_SIZE);
+                Received_packet_count++;
+            }
+
+        } else {
+
+            System.out.println("FileApp - Receive 0x10");
+            System.arraycopy(input, HEADER_SIZE, receive_data_buffer, 0, int_Data_totlen);
             System.out.println(temp_filename);
             OutputFile();
             Received_packet_count++;
             String msg = temp_filename + "을 받았습니다.";
             this.GetUpperLayer(0).Receive(msg.getBytes());
-            receive_data_buffer=null;
+            receive_data_buffer = null;
+
         }
 
         int packet_count;
