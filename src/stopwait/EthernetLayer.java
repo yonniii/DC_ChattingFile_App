@@ -211,15 +211,15 @@ public class EthernetLayer implements BaseLayer {
             return true;
         }
         else if(input[12] == (byte) 0x20 && input[13] == (byte) 0x90){
-            System.out.println("Ethernet - Receive" + new String(input));
+            System.out.println("Ethernet - Receive");
             fileAppLayer.Receive(RemoveCappHeader(input, input.length));
             return true;
         }
-        else if (input[12] == (byte) 0x08 && input[13] == (byte) 0x02) {
-            chatAppLayer.isReceiveACK_Chat = true;
-            System.out.println("Ethernet - Ack 받음");
-            return true;
-        }
+//        else if (input[12] == (byte) 0x08 && input[13] == (byte) 0x02) {
+//            chatAppLayer.isReceiveACK_Chat = true;
+//            System.out.println("Ethernet - Ack 받음");
+//            return true;
+//        }
         return false;
     }
 
