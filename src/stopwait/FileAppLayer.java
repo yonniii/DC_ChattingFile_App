@@ -113,14 +113,14 @@ public class FileAppLayer implements BaseLayer {
     }
 
     private byte[] ObjToByte(byte[] type, byte[] seqNum, byte[] input, int size) {
-        byte[] buf = new byte[size + 12];
+        byte[] buf = new byte[size + HEADER_SIZE];
         m_sHeader.fapp_type = type;
         m_sHeader.fapp_seq_num = seqNum;
         System.arraycopy(m_sHeader.fapp_totlen, 0, buf, 0, 4);
         System.arraycopy(m_sHeader.fapp_type, 0, buf, 4, 2);
         System.arraycopy(m_sHeader.fapp_seq_num, 0, buf, 8, 4);
         for (int i = 0; i < size; i++) {
-            buf[i + 12] = input[i];
+            buf[i + HEADER_SIZE] = input[i];
         }
         return buf;
     }
