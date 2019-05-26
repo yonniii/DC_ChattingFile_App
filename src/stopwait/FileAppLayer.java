@@ -41,35 +41,6 @@ public class FileAppLayer implements BaseLayer {
     //    public boolean isReceiveACK_File = false;
     _FAPP_HEADER m_sHeader = new _FAPP_HEADER();
 
-    // 11 12 13으로 타입
-
-
-//    class SendFile_Thread implements Runnable {
-//        byte[] data;
-//        Pcap AdapterObject;
-//        BaseLayer UpperLayer;
-//
-//        public SendFile_Thread(Pcap m_AdapterObject, BaseLayer m_UpperLayer) {
-//            AdapterObject = m_AdapterObject;
-//            UpperLayer = m_UpperLayer;
-//        }
-//
-//        @Override
-//        public void run() {
-//            while (true) {
-//                PcapPacketHandler<String> jpacketHandler = new PcapPacketHandler<String>() {
-//                    public void nextPacket(PcapPacket packet, String user) {
-//                        data = packet.getByteArray(0, packet.size());
-//                        UpperLayer.Receive(data);
-//                    }
-//                };
-//
-//                AdapterObject.loop(100000, jpacketHandler, "");
-//            }
-//        }
-//    } //안쓸듯??
-
-
     public FileAppLayer(String pName) {
         // TODO Auto-generated constructor stub
         pLayerName = pName;
@@ -126,17 +97,6 @@ public class FileAppLayer implements BaseLayer {
         return buf;
     }
 
-    //    private boolean WaitAck(){
-//        while (!isReceiveACK_File) {
-//            try {
-//                Thread.sleep(800);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        isReceiveACK_File = false;
-//        return true;
-//    }
     private byte[] OpenFile(String filePath) {
         BufferedInputStream bs = null;
         byte[] b = null;
@@ -146,7 +106,6 @@ public class FileAppLayer implements BaseLayer {
             System.out.println(b.length);
             while (bs.read(b) != -1) {
             }
-//            System.out.println(new String(b)); //필요에 따라 스트링객체로 변환
 
         } catch (Exception e) {
             System.out.println("in FileApp OpenFile" + e);
@@ -272,34 +231,6 @@ public class FileAppLayer implements BaseLayer {
     }
 
     public int Received_packet_count=0;
-
-//    public boolean Receive(byte[] input) {
-//        if (input.length < 12)
-//            return false;
-////        byte[] type = {input[4],input[5]};
-//        int totlen = byteToint4(input[0], input[1], input[2], input[3]);
-//        if (input[4] == 0x10 && input[5] == 0x10) {
-//            System.out.println("FileApp - Receive 0x10");
-//            inputBuffer = ByteBuffer.allocate(totlen);
-//            temp_filename = new String(RemoveCappHeader(input, input.length));
-//        } else if (input[4] == 0x11 && input[5] == 0x11) {
-//            System.out.println("FileApp - Receive 0x11");
-//            inputBuffer.put(RemoveCappHeader(input, 1460));
-//            Received_packet_count++;
-//        } else if (input[4] == 0x12 && input[5] == 0x12) {
-//            System.out.println("FileApp - Receive 0x12");
-//            inputBuffer.put(RemoveCappHeader(input, totlen % 1448 + 12));
-//            Received_packet_count++;
-//            String msg = temp_filename + "을 받았습니다.";
-//            OutputFile(inputBuffer.array());
-//            this.GetUpperLayer(0).Receive(msg.getBytes());
-////            this.GetUpperLayer(0).Receive(inputBuffer.array());
-//            inputBuffer = ByteBuffer.allocate(0);
-//        }
-//
-//        return false;
-//    }
-
 
     public boolean Receive(byte[] input) {
         if (input.length < 12)

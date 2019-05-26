@@ -37,7 +37,6 @@ public class ChatAppLayer implements BaseLayer {
 
     public void ResetHeader() {
         m_sHeader = new _CHAT_APP();
-//	    count = 0;
     }
 
 

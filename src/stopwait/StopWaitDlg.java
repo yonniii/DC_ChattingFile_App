@@ -73,13 +73,11 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         m_LayerMgr.AddLayer(new FileAppLayer("FileApp"));
         m_LayerMgr.AddLayer(new StopWaitDlg("GUI"));// 레이어별로 객체를 생성하여 연결
         m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *ChatApp ( *GUI ) *FileApp ( *GUI ) ) ) ");
-//        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *FileApp ( *GUI ) ) ) ");
 
 
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-//                    StopWaitDlg frame = new StopWaitDlg("GUI");
                     StopWaitDlg frame = (StopWaitDlg) m_LayerMgr.GetLayer("GUI");
                     frame.setVisible(true);
                 } catch (Exception e) {
@@ -294,13 +292,6 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
                 Progress_Thread thread = new Progress_Thread();
                 Thread object = new Thread(thread);
                 object.start();
-//                if (Setting_Button.getText().equals("Reset")) {
-////                    ChattingArea.append(new String("[SEND] :" + ChattingWrite.getText() + "\n")); // 보내려는 메세지를 출력
-////                    GetUnderLayer().Send(ChattingWrite.getText().getBytes(), ChattingWrite.getText().length()); // 아래계층인 챗앱레이어에 데이터 보냄
-//                    fileAppLayer.Send(fileNameText.getText());
-//                } else {
-//                    JOptionPane.showMessageDialog(null, "주소 설정 오류입니다.", "error", JOptionPane.WARNING_MESSAGE);
-//                }
             }
         });
         fileSendButton.setBounds(262, 55, 94, 20);
@@ -323,7 +314,6 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
     void set_progressBar(int max, int current) {
         if ((int) ((float) current / (float) max * 100) == 100) {
             progressBar.setValue((int) ((float) current / (float) max * 100));
-//            JOptionPane.showMessageDialog(null, "sucess", "SUCESS_DOWNLOAD", 1);
         } else {
             progressBar.setValue((int) ((float) current / (float) max * 100));
         }
