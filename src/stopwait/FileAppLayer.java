@@ -178,7 +178,7 @@ public class FileAppLayer implements BaseLayer {
                 for (int i = 0; i <= int_seq_num; i++) {
 
                     try {
-                        Thread.sleep((long) 1000);
+                        Thread.sleep((long) 1);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
