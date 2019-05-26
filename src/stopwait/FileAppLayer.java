@@ -1,10 +1,5 @@
 package stopwait;
 
-import org.jnetpcap.Pcap;
-import org.jnetpcap.packet.PcapPacket;
-import org.jnetpcap.packet.PcapPacketHandler;
-
-import javax.swing.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -14,10 +9,6 @@ public class FileAppLayer implements BaseLayer {
 
     public int getFileStatus() {
         return (int)file_status;
-    }
-
-    public void setFileStatus(int i) {
-        this.file_status = i;
     }
 
     public class _FAPP_HEADER {
@@ -203,7 +194,6 @@ public class FileAppLayer implements BaseLayer {
     ByteBuffer inputBuffer;
     String temp_filename;
     byte[] receive_data_buffer;
-    int receive_packet_num = 0;
     private void OutputFile() {
         BufferedOutputStream bs = null;
         try {
