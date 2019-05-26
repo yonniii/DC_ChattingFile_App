@@ -252,7 +252,7 @@ public class FileAppLayer implements BaseLayer {
 
     public int Received_packet_count=0;
 
-    public boolean Receive(byte[] input) {
+    public synchronized boolean Receive(byte[] input) {
         if (input.length < 12)
             return false;
         int int_Data_totlen = byteToint4(input[0], input[1], input[2], input[3]);
