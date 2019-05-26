@@ -289,9 +289,6 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
                 String[] name = fileNameText.getText().split("\\\\");
                 ChattingArea.append(new String("[SEND] :" + name[name.length - 1] + "을 전송합니다.\n"));
                 fileAppLayer.Send(fileNameText.getText());
-                Progress_Thread thread = new Progress_Thread();
-                Thread object = new Thread(thread);
-                object.start();
             }
         });
         fileSendButton.setBounds(262, 55, 94, 20);
@@ -318,43 +315,6 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
             progressBar.setValue((int) ((float) current / (float) max * 100));
         }
 
-    }
-
-    class Progress_Thread implements Runnable {
-
-
-        public Progress_Thread() {
-
-        }
-
-        @Override
-        public void run() {
-            try {
-                while (fileNameText.getText()!="") {
-                    progressBar.setValue(fileAppLayer.getFileStatus());
-                    progressBar.setStringPainted(true);
-                    Thread.sleep(0);
-                    if (fileAppLayer.getFileStatus() == 100) {
-                        progressBar.setValue(fileAppLayer.getFileStatus());
-                        break;
-                    }
-                }
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-                fileAppLayer.setFileStatus(0);
-            } finally {
-                try {
-                    if (fileAppLayer.getFileStatus() == 100) {
-                        fileAppLayer.setFileStatus(0);
-                    } else {
-                        fileAppLayer.setFileStatus(0);
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    fileAppLayer.setFileStatus(0);
-                }
-            }
-        }
     }
 
     public boolean Receive(byte[] input) {
