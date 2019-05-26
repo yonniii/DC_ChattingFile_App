@@ -10,6 +10,9 @@ public class FileAppLayer implements BaseLayer {
     public int getFileStatus() {
         return (int)file_status;
     }
+    private void setFileStatus(float status ){
+        this.file_status = status;
+    }
 
     public class _FAPP_HEADER {
         byte[] fapp_totlen;
@@ -111,7 +114,7 @@ public class FileAppLayer implements BaseLayer {
     }
 
 
-    float file_status = 0;
+    private float file_status = 0;
     private final int MAX_DATA_SIZE = 1448;
     final int HEADER_SIZE = 12;
     final byte[] PACKET_TYPE_NO_FRAG = {(byte) 0x10, (byte) 0x10};
@@ -144,8 +147,8 @@ public class FileAppLayer implements BaseLayer {
 
             System.out.println("FileApp - filepath : " + filepath);
 
-            file_status = 0;
-            dlg.setSenderProgressBar((int)file_status);
+            setFileStatus(0);
+            dlg.setSenderProgressBar(getFileStatus());
 
             byte[] byte_file_Data = OpenFile(filepath); //경로에 저장된 파일 불러와서 바이트배열에 저장
             byte[] byte_file_name = getFileName(filepath); //파일의 이름 저장
@@ -195,9 +198,9 @@ public class FileAppLayer implements BaseLayer {
                         System.out.println("FileApp - Send 3 last data" + i + "번 패킷 마지막~~~~~~");
                         ethernet.SendFile(byte_buffer_data_withHEADER, int_last_packet_size + HEADER_SIZE);
                     }
-                    file_status = ((float) (i + 1) / (float) int_seq_num) * 100;
-                    System.out.println("지금까지의 진행상황은 "+(int)file_status);
-                    dlg.setSenderProgressBar((int)file_status);
+                    setFileStatus(((float) (i + 1) / (float) int_seq_num) * 100);
+                    System.out.println("지금까지의 진행상황은 "+getFileStatus());
+                    dlg.setSenderProgressBar(getFileStatus());
                 }
 
             } else { //단편화 하지 않은 데이터 전송
@@ -210,8 +213,8 @@ public class FileAppLayer implements BaseLayer {
                 byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(1), byte_file_Data, int_Data_totlen);
                 System.out.println("FileApp - Send 0 no Fragmentaion data");
                 ethernet.SendFile(byte_buffer_data_withHEADER, int_Data_totlen + HEADER_SIZE);
-                file_status = 100;
-                dlg.setSenderProgressBar((int)file_status);
+                setFileStatus(100);
+                dlg.setSenderProgressBar(getFileStatus());
             }
             ResetHeader();
 
