@@ -305,7 +305,7 @@ public class FileAppLayer implements BaseLayer {
         else
             packet_count = int_Data_totlen / MAX_DATA_SIZE;
 
-        ((StopWaitDlg) GetUpperLayer(0)).set_progressBar(packet_count, Received_packet_count);
+        ((StopWaitDlg) GetUpperLayer(0)).setReceiverProgressBar(packet_count, Received_packet_count);
 
 
         return true;
