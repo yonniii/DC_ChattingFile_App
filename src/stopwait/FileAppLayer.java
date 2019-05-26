@@ -152,15 +152,16 @@ public class FileAppLayer implements BaseLayer {
 
             byte[] byte_file_Data = OpenFile(filepath); //경로에 저장된 파일 불러와서 바이트배열에 저장
             byte[] byte_file_name = getFileName(filepath); //파일의 이름 저장
+            byte[] byte_fileName_length = intToByte4(byte_file_name.length);
             int int_Data_totlen = byte_file_Data.length; //파일의 총 길이 int형으로 저장
             byte[] byte_Data_totlen = intToByte4(int_Data_totlen); //파일의 총 길이 byte배열로 저장
             byte[] byte_buffer_ToSend; //파일에 대한 바이트배열 자르는 데에 사용할 임시 배열
             byte[] byte_buffer_data_withHEADER; //자른 배열에 헤더를 붙이고, underLayer에 보낼 배열
-            m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
 
             if (int_Data_totlen > MAX_DATA_SIZE) { //단편화 했을 때의 데이터 전송
 
                 m_sHeader.fapp_msg_type = (byte) 0x00;
+                m_sHeader.fapp_totlen = byte_fileName_length;
                 byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
                 System.out.println("FileApp - Send 1 filename");
                 ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //첫번째 패킷 전송
@@ -175,6 +176,7 @@ public class FileAppLayer implements BaseLayer {
                 byte_buffer_ToSend = new byte[MAX_DATA_SIZE];
 
                 m_sHeader.fapp_msg_type = (byte) 0x01;
+                m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
                 for (int i = 0; i <= int_seq_num; i++) {
 
                     try {
@@ -205,11 +207,13 @@ public class FileAppLayer implements BaseLayer {
 
             } else { //단편화 하지 않은 데이터 전송
                 m_sHeader.fapp_msg_type = (byte) 0x00;
+                m_sHeader.fapp_totlen = byte_fileName_length;
                 byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
                 System.out.println("FileApp - Send 0 filename");
                 ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //단편화 하지 않음 , 파일정보 전송
 
                 m_sHeader.fapp_msg_type = (byte) 0x01;
+                m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
                 byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(1), byte_file_Data, int_Data_totlen);
                 System.out.println("FileApp - Send 0 no Fragmentaion data");
                 ethernet.SendFile(byte_buffer_data_withHEADER, int_Data_totlen + HEADER_SIZE);
@@ -267,8 +271,7 @@ public class FileAppLayer implements BaseLayer {
 
         if (msg_type == (byte) 0x00) {
             System.out.println("FileApp - Receive fileNAME");
-            receive_data_buffer = new byte[int_Data_totlen];
-            temp_filename = new String(RemoveCappHeader(input, input.length)); //데이터에서 파일이름만 추출하여 필드에 저장
+            temp_filename = new String(RemoveCappHeader(input, int_Data_totlen+HEADER_SIZE)); //데이터에서 파일이름만 추출하여 필드에 저장
             return true;
         }
 
@@ -284,6 +287,9 @@ public class FileAppLayer implements BaseLayer {
                 this.GetUpperLayer(0).Receive(msg.getBytes());
                 receive_data_buffer = null;
             } else { //처음~중간 패킷일 때
+                if(Arrays.equals(byte_Packet_type,PACKET_TYPE_FIRST)){
+                    receive_data_buffer = new byte[int_Data_totlen];
+                }
                 System.out.println("FileApp - Receive 0x11 / 0x12 " + int_seq_num + "번째 패킷");
                 System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, MAX_DATA_SIZE);
                 Received_packet_count++;
