@@ -296,7 +296,7 @@ public class FileAppLayer implements BaseLayer {
             }
 
         } else {
-
+            receive_data_buffer = new byte[int_Data_totlen];
             System.out.println("FileApp - Receive 0x10");
             System.arraycopy(input, HEADER_SIZE, receive_data_buffer, 0, int_Data_totlen);
             System.out.println(temp_filename);
