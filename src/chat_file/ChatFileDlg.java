@@ -308,7 +308,7 @@ public class ChatFileDlg extends JFrame implements BaseLayer {
         progressBar.setValue(file_status);
     }
 
-    void setReceiverProgressBar(int max, int current) {
+    public void setReceiverProgressBar(int max, int current) {
         if ((int) ((float) current / (float) max * 100) == 100) {
             progressBar.setValue((int) ((float) current / (float) max * 100));
         } else {
