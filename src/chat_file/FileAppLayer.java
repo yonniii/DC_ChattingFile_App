@@ -1,4 +1,4 @@
-package stopwait;
+package chat_file;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -124,7 +124,7 @@ public class FileAppLayer implements BaseLayer {
 
     public boolean Send(String filepath) {
         EthernetLayer ethernet = (EthernetLayer) this.GetUnderLayer();
-        StopWaitDlg dlg = (StopWaitDlg) this.GetUpperLayer(0);
+        ChatFileDlg dlg = (ChatFileDlg) this.GetUpperLayer(0);
         SendFile_Thread thread = new SendFile_Thread(filepath,dlg,ethernet);
         Thread object = new Thread(thread);
         object.start();
@@ -133,10 +133,10 @@ public class FileAppLayer implements BaseLayer {
 
     class SendFile_Thread implements Runnable {
         String filepath;
-        StopWaitDlg dlg;
+        ChatFileDlg dlg;
         EthernetLayer ethernet;
 
-        public SendFile_Thread(String filePath,StopWaitDlg d,EthernetLayer e) {
+        public SendFile_Thread(String filePath, ChatFileDlg d, EthernetLayer e) {
             this.filepath = filePath;
             dlg = d;
             ethernet = e;
@@ -278,7 +278,7 @@ public class FileAppLayer implements BaseLayer {
         if (int_Data_totlen > MAX_DATA_SIZE) {
 
             if (Arrays.equals(byte_Packet_type, PACKET_TYPE_LAST)) { //마지막 패킷일 때
-                System.out.println("FileApp - Receive 0x12");
+                System.out.println("FileApp - Receive 0x12 "+ int_seq_num + "번째 패킷");
                 System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, int_last_packet_size);
                 System.out.println(temp_filename);
                 OutputFile();
@@ -314,7 +314,7 @@ public class FileAppLayer implements BaseLayer {
         else
             packet_count = int_Data_totlen / MAX_DATA_SIZE;
 
-        ((StopWaitDlg) GetUpperLayer(0)).setReceiverProgressBar(packet_count, Received_packet_count);
+        ((ChatFileDlg) GetUpperLayer(0)).setReceiverProgressBar(packet_count, Received_packet_count);
 
 
         return true;

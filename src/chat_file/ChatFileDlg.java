@@ -1,6 +1,5 @@
-package stopwait;
+package chat_file;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.EventQueue;
@@ -18,12 +17,9 @@ import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
-import javafx.scene.control.ComboBox;
-import javafx.scene.paint.Stop;
-import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapIf;
 
-public class StopWaitDlg extends JFrame implements BaseLayer {
+public class ChatFileDlg extends JFrame implements BaseLayer {
 
     public int nUpperLayerCount = 0;
     public String pLayerName = null;
@@ -71,14 +67,14 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         m_LayerMgr.AddLayer(new EthernetLayer("Ethernet"));
         m_LayerMgr.AddLayer(new ChatAppLayer("ChatApp"));
         m_LayerMgr.AddLayer(new FileAppLayer("FileApp"));
-        m_LayerMgr.AddLayer(new StopWaitDlg("GUI"));// 레이어별로 객체를 생성하여 연결
+        m_LayerMgr.AddLayer(new ChatFileDlg("GUI"));// 레이어별로 객체를 생성하여 연결
         m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *ChatApp ( *GUI ) *FileApp ( *GUI ) ) ) ");
 
 
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    StopWaitDlg frame = (StopWaitDlg) m_LayerMgr.GetLayer("GUI");
+                    ChatFileDlg frame = (ChatFileDlg) m_LayerMgr.GetLayer("GUI");
                     frame.setVisible(true);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -88,7 +84,7 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
 
     }
 
-    public StopWaitDlg(String pName) {
+    public ChatFileDlg(String pName) {
         pLayerName = pName;
 
         setTitle("201701967_강서연");

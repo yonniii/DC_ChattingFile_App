@@ -1,4 +1,4 @@
-package stopwait;
+package chat_file;
 
 import java.util.List;
 import java.nio.ByteBuffer;
@@ -8,7 +8,6 @@ import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.packet.PcapPacket;
 import org.jnetpcap.packet.PcapPacketHandler;
-import stopwait.BaseLayer;
 
 public class NILayer implements BaseLayer {
     public String pLayerName = null;

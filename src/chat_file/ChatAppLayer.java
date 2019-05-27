@@ -1,4 +1,4 @@
-package stopwait;
+package chat_file;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

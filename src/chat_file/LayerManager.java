@@ -1,4 +1,4 @@
-package stopwait;
+package chat_file;
 
 import java.util.ArrayList;
 import java.util.StringTokenizer;
