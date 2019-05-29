@@ -233,8 +233,9 @@ public class ChatFileDlg extends JFrame implements BaseLayer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (Setting_Button.getText().equals("Reset")) {
-                    ChattingArea.append(new String("[SEND] :" + ChattingWrite.getText() + "\n")); // 보내려는 메세지를 출력
-                    chatLayer.Send(ChattingWrite.getText().getBytes(), ChattingWrite.getText().length()); // 아래계층인 챗앱레이어에 데이터 보냄
+                    SendChat_Thread thread = new SendChat_Thread(ChattingWrite.getText());
+                    Thread object = new Thread(thread);
+                    object.start();
                 } else {
                     JOptionPane.showMessageDialog(null, "주소 설정 오류입니다.", "error", JOptionPane.WARNING_MESSAGE);
                 }
@@ -282,9 +283,9 @@ public class ChatFileDlg extends JFrame implements BaseLayer {
         fileSendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String[] name = fileNameText.getText().split("\\\\");
-                ChattingArea.append(new String("[SEND] :" + name[name.length - 1] + "을 전송합니다.\n"));
-                fileAppLayer.Send(fileNameText.getText());
+                SendFile_Thread thread = new SendFile_Thread(fileNameText.getText());
+                Thread object = new Thread(thread);
+                object.start();
             }
         });
         fileSendButton.setBounds(262, 55, 94, 20);
@@ -302,6 +303,33 @@ public class ChatFileDlg extends JFrame implements BaseLayer {
 
         setVisible(true);
 
+    }
+
+    class SendChat_Thread implements Runnable{
+        String data;
+        public SendChat_Thread (String input){
+            this.data = input;
+        }
+
+        @Override
+        public void run() {
+            ChattingArea.append(new String("[SEND] :" + data + "\n")); // 보내려는 메세지를 출력
+            chatLayer.Send(data.getBytes(), data.length()); // 아래계층인 챗앱레이어에 데이터 보냄
+        }
+    }
+
+    class SendFile_Thread implements Runnable{
+        String data;
+        public SendFile_Thread (String input){
+            this.data = input;
+        }
+
+        @Override
+        public void run() {
+            String[] name = data.split("\\\\");
+            ChattingArea.append(new String("[SEND] :" + name[name.length - 1] + "을 전송합니다.\n"));
+            fileAppLayer.Send(data);
+        }
     }
 
     public void setSenderProgressBar(int file_status) {

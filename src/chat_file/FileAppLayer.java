@@ -124,106 +124,104 @@ public class FileAppLayer implements BaseLayer {
     public boolean Send(String filepath) {
         EthernetLayer ethernet = (EthernetLayer) this.GetUnderLayer();
         ChatFileDlg dlg = (ChatFileDlg) this.GetUpperLayer(0);
-        SendFile_Thread thread = new SendFile_Thread(filepath,dlg,ethernet);
-        Thread object = new Thread(thread);
-        object.start();
+        System.out.println("FileApp - filepath : " + filepath);
+
+        setFileStatus(0);
+        dlg.setSenderProgressBar(getFileStatus());
+
+        byte[] byte_file_Data = OpenFile(filepath); //경로에 저장된 파일 불러와서 바이트배열에 저장
+        byte[] byte_file_name = getFileName(filepath); //파일의 이름 저장
+        byte[] byte_fileName_length = intToByte4(byte_file_name.length);
+        int int_Data_totlen = byte_file_Data.length; //파일의 총 길이 int형으로 저장
+        byte[] byte_Data_totlen = intToByte4(int_Data_totlen); //파일의 총 길이 byte배열로 저장
+        byte[] byte_buffer_ToSend; //파일에 대한 바이트배열 자르는 데에 사용할 임시 배열
+        byte[] byte_buffer_data_withHEADER; //자른 배열에 헤더를 붙이고, underLayer에 보낼 배열
+
+        if (int_Data_totlen > MAX_DATA_SIZE) { //단편화 했을 때의 데이터 전송
+
+            m_sHeader.fapp_msg_type = (byte) 0x00;
+            m_sHeader.fapp_totlen = byte_fileName_length;
+            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
+            System.out.println("FileApp - Send 1 filename");
+            ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //첫번째 패킷 전송
+            int int_seq_num; //중간 패킷의 수
+            int int_last_packet_size; //마지막 패킷의 사이즈
+            if ((int_last_packet_size = int_Data_totlen % MAX_DATA_SIZE) == 0) {
+                int_seq_num = int_Data_totlen / MAX_DATA_SIZE - 1;
+                int_last_packet_size = MAX_DATA_SIZE;
+            } else {
+                int_seq_num = int_Data_totlen / MAX_DATA_SIZE;
+            }
+            byte_buffer_ToSend = new byte[MAX_DATA_SIZE];
+
+            m_sHeader.fapp_msg_type = (byte) 0x01;
+            m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
+            for (int i = 0; i <= int_seq_num; i++) {
+
+                try {
+                    Thread.sleep((long) 1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (i != int_seq_num) { //처음~중간패킷일 때
+                    System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, MAX_DATA_SIZE);
+                    if (i == 0) { //첫번째 패킷일 때
+                        byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(i), byte_buffer_ToSend, MAX_DATA_SIZE);
+                        System.out.println("FileApp - Send 1 first data" + i + "번 패킷");
+                    } else { //중간 패킷일 때
+                        byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_MID, intToByte4(i), byte_buffer_ToSend, MAX_DATA_SIZE);
+                        System.out.println("FileApp - Send 2 midle data" + i + "번 패킷");
+                    }
+                    ethernet.SendFile(byte_buffer_data_withHEADER, MAX_DATA_SIZE + HEADER_SIZE);
+                } else { //마지막 패킷일 때
+                    System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, int_last_packet_size);
+                    byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_LAST, intToByte4(i), byte_buffer_ToSend, int_last_packet_size);
+                    System.out.println("FileApp - Send 3 last data" + i + "번 패킷 마지막~~~~~~");
+                    ethernet.SendFile(byte_buffer_data_withHEADER, int_last_packet_size + HEADER_SIZE);
+                }
+                setFileStatus(((float) (i + 1) / (float) int_seq_num) * 100);
+                System.out.println("지금까지의 진행상황은 " + getFileStatus());
+                dlg.setSenderProgressBar(getFileStatus());
+            }
+
+        } else { //단편화 하지 않은 데이터 전송
+            m_sHeader.fapp_msg_type = (byte) 0x00;
+            m_sHeader.fapp_totlen = byte_fileName_length;
+            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
+            System.out.println("FileApp - Send 0 filename");
+            ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //단편화 하지 않음 , 파일정보 전송
+
+            m_sHeader.fapp_msg_type = (byte) 0x01;
+            m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
+            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(1), byte_file_Data, int_Data_totlen);
+            System.out.println("FileApp - Send 0 no Fragmentaion data");
+            ethernet.SendFile(byte_buffer_data_withHEADER, int_Data_totlen + HEADER_SIZE);
+            setFileStatus(100);
+            dlg.setSenderProgressBar(getFileStatus());
+        }
+        ResetHeader();
+
+
         return true;
     }
 
-    class SendFile_Thread implements Runnable {
-        String filepath;
-        ChatFileDlg dlg;
-        EthernetLayer ethernet;
-
-        public SendFile_Thread(String filePath, ChatFileDlg d, EthernetLayer e) {
-            this.filepath = filePath;
-            dlg = d;
-            ethernet = e;
-        }
-
-        @Override
-        public void run() {
-
-            System.out.println("FileApp - filepath : " + filepath);
-
-            setFileStatus(0);
-            dlg.setSenderProgressBar(getFileStatus());
-
-            byte[] byte_file_Data = OpenFile(filepath); //경로에 저장된 파일 불러와서 바이트배열에 저장
-            byte[] byte_file_name = getFileName(filepath); //파일의 이름 저장
-            byte[] byte_fileName_length = intToByte4(byte_file_name.length);
-            int int_Data_totlen = byte_file_Data.length; //파일의 총 길이 int형으로 저장
-            byte[] byte_Data_totlen = intToByte4(int_Data_totlen); //파일의 총 길이 byte배열로 저장
-            byte[] byte_buffer_ToSend; //파일에 대한 바이트배열 자르는 데에 사용할 임시 배열
-            byte[] byte_buffer_data_withHEADER; //자른 배열에 헤더를 붙이고, underLayer에 보낼 배열
-
-            if (int_Data_totlen > MAX_DATA_SIZE) { //단편화 했을 때의 데이터 전송
-
-                m_sHeader.fapp_msg_type = (byte) 0x00;
-                m_sHeader.fapp_totlen = byte_fileName_length;
-                byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
-                System.out.println("FileApp - Send 1 filename");
-                ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //첫번째 패킷 전송
-                int int_seq_num; //중간 패킷의 수
-                int int_last_packet_size; //마지막 패킷의 사이즈
-                if ((int_last_packet_size = int_Data_totlen % MAX_DATA_SIZE) == 0) {
-                    int_seq_num = int_Data_totlen / MAX_DATA_SIZE - 1;
-                    int_last_packet_size = MAX_DATA_SIZE;
-                } else {
-                    int_seq_num = int_Data_totlen / MAX_DATA_SIZE;
-                }
-                byte_buffer_ToSend = new byte[MAX_DATA_SIZE];
-
-                m_sHeader.fapp_msg_type = (byte) 0x01;
-                m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
-                for (int i = 0; i <= int_seq_num; i++) {
-
-                    try {
-                        Thread.sleep((long) 1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    if (i != int_seq_num) { //처음~중간패킷일 때
-                        System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, MAX_DATA_SIZE);
-                        if (i == 0) { //첫번째 패킷일 때
-                            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_FIRST, intToByte4(i), byte_buffer_ToSend, MAX_DATA_SIZE);
-                            System.out.println("FileApp - Send 1 first data" + i + "번 패킷");
-                        } else { //중간 패킷일 때
-                            byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_MID, intToByte4(i), byte_buffer_ToSend, MAX_DATA_SIZE);
-                            System.out.println("FileApp - Send 2 midle data" + i + "번 패킷");
-                        }
-                        ethernet.SendFile(byte_buffer_data_withHEADER, MAX_DATA_SIZE + HEADER_SIZE);
-                    } else { //마지막 패킷일 때
-                        System.arraycopy(byte_file_Data, MAX_DATA_SIZE * i, byte_buffer_ToSend, 0, int_last_packet_size);
-                        byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_LAST, intToByte4(i), byte_buffer_ToSend, int_last_packet_size);
-                        System.out.println("FileApp - Send 3 last data" + i + "번 패킷 마지막~~~~~~");
-                        ethernet.SendFile(byte_buffer_data_withHEADER, int_last_packet_size + HEADER_SIZE);
-                    }
-                    setFileStatus(((float) (i + 1) / (float) int_seq_num) * 100);
-                    System.out.println("지금까지의 진행상황은 "+getFileStatus());
-                    dlg.setSenderProgressBar(getFileStatus());
-                }
-
-            } else { //단편화 하지 않은 데이터 전송
-                m_sHeader.fapp_msg_type = (byte) 0x00;
-                m_sHeader.fapp_totlen = byte_fileName_length;
-                byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(0), byte_file_name, byte_file_name.length); //첫번째 파일의 이름과 크기와 타입(0x10)을 헤더로 붙임
-                System.out.println("FileApp - Send 0 filename");
-                ethernet.SendFile(byte_buffer_data_withHEADER, byte_buffer_data_withHEADER.length); //단편화 하지 않음 , 파일정보 전송
-
-                m_sHeader.fapp_msg_type = (byte) 0x01;
-                m_sHeader.fapp_totlen = byte_Data_totlen; //헤더에 길이정보 업데이트
-                byte_buffer_data_withHEADER = ObjToByte(PACKET_TYPE_NO_FRAG, intToByte4(1), byte_file_Data, int_Data_totlen);
-                System.out.println("FileApp - Send 0 no Fragmentaion data");
-                ethernet.SendFile(byte_buffer_data_withHEADER, int_Data_totlen + HEADER_SIZE);
-                setFileStatus(100);
-                dlg.setSenderProgressBar(getFileStatus());
-            }
-            ResetHeader();
-
-
-        }
-    }
+//    class SendFile_Thread implements Runnable {
+//        String filepath;
+//        ChatFileDlg dlg;
+//        EthernetLayer ethernet;
+//
+//        public SendFile_Thread(String filePath, ChatFileDlg d, EthernetLayer e) {
+//            this.filepath = filePath;
+//            dlg = d;
+//            ethernet = e;
+//        }
+//
+//        @Override
+//        public void run() {
+//
+//
+//        }
+//    }
 
     String temp_filename;
     byte[] receive_data_buffer;
@@ -314,7 +312,6 @@ public class FileAppLayer implements BaseLayer {
             packet_count = int_Data_totlen / MAX_DATA_SIZE;
 
         ((ChatFileDlg) GetUpperLayer(0)).setReceiverProgressBar(packet_count, Received_packet_count);
-
 
         return true;
     }
