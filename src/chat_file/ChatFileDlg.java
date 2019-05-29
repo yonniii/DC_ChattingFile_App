@@ -1,6 +1,5 @@
-package stopwait;
+package chat_file;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.EventQueue;
@@ -18,12 +17,9 @@ import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
-import javafx.scene.control.ComboBox;
-import javafx.scene.paint.Stop;
-import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapIf;
 
-public class StopWaitDlg extends JFrame implements BaseLayer {
+public class ChatFileDlg extends JFrame implements BaseLayer {
 
     public int nUpperLayerCount = 0;
     public String pLayerName = null;
@@ -71,16 +67,14 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         m_LayerMgr.AddLayer(new EthernetLayer("Ethernet"));
         m_LayerMgr.AddLayer(new ChatAppLayer("ChatApp"));
         m_LayerMgr.AddLayer(new FileAppLayer("FileApp"));
-        m_LayerMgr.AddLayer(new StopWaitDlg("GUI"));// 레이어별로 객체를 생성하여 연결
+        m_LayerMgr.AddLayer(new ChatFileDlg("GUI"));// 레이어별로 객체를 생성하여 연결
         m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *ChatApp ( *GUI ) *FileApp ( *GUI ) ) ) ");
-//        m_LayerMgr.ConnectLayers(" NI ( *Ethernet ( *FileApp ( *GUI ) ) ) ");
 
 
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-//                    StopWaitDlg frame = new StopWaitDlg("GUI");
-                    StopWaitDlg frame = (StopWaitDlg) m_LayerMgr.GetLayer("GUI");
+                    ChatFileDlg frame = (ChatFileDlg) m_LayerMgr.GetLayer("GUI");
                     frame.setVisible(true);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -90,7 +84,7 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
 
     }
 
-    public StopWaitDlg(String pName) {
+    public ChatFileDlg(String pName) {
         pLayerName = pName;
 
         setTitle("201701967_강서연");
@@ -239,8 +233,9 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (Setting_Button.getText().equals("Reset")) {
-                    ChattingArea.append(new String("[SEND] :" + ChattingWrite.getText() + "\n")); // 보내려는 메세지를 출력
-                    chatLayer.Send(ChattingWrite.getText().getBytes(), ChattingWrite.getText().length()); // 아래계층인 챗앱레이어에 데이터 보냄
+                    SendChat_Thread thread = new SendChat_Thread(ChattingWrite.getText());
+                    Thread object = new Thread(thread);
+                    object.start();
                 } else {
                     JOptionPane.showMessageDialog(null, "주소 설정 오류입니다.", "error", JOptionPane.WARNING_MESSAGE);
                 }
@@ -288,19 +283,9 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
         fileSendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String[] name = fileNameText.getText().split("\\\\");
-                ChattingArea.append(new String("[SEND] :" + name[name.length - 1] + "을 전송합니다.\n"));
-                fileAppLayer.Send(fileNameText.getText());
-                Progress_Thread thread = new Progress_Thread();
+                SendFile_Thread thread = new SendFile_Thread(fileNameText.getText());
                 Thread object = new Thread(thread);
                 object.start();
-//                if (Setting_Button.getText().equals("Reset")) {
-////                    ChattingArea.append(new String("[SEND] :" + ChattingWrite.getText() + "\n")); // 보내려는 메세지를 출력
-////                    GetUnderLayer().Send(ChattingWrite.getText().getBytes(), ChattingWrite.getText().length()); // 아래계층인 챗앱레이어에 데이터 보냄
-//                    fileAppLayer.Send(fileNameText.getText());
-//                } else {
-//                    JOptionPane.showMessageDialog(null, "주소 설정 오류입니다.", "error", JOptionPane.WARNING_MESSAGE);
-//                }
             }
         });
         fileSendButton.setBounds(262, 55, 94, 20);
@@ -320,51 +305,44 @@ public class StopWaitDlg extends JFrame implements BaseLayer {
 
     }
 
-    void set_progressBar(int max, int current) {
-        if ((int) ((float) current / (float) max * 100) == 100) {
-            progressBar.setValue((int) ((float) current / (float) max * 100));
-//            JOptionPane.showMessageDialog(null, "sucess", "SUCESS_DOWNLOAD", 1);
-        } else {
-            progressBar.setValue((int) ((float) current / (float) max * 100));
-        }
-
-    }
-
-    class Progress_Thread implements Runnable {
-
-
-        public Progress_Thread() {
-
+    class SendChat_Thread implements Runnable{
+        String data;
+        public SendChat_Thread (String input){
+            this.data = input;
         }
 
         @Override
         public void run() {
-            try {
-                while (fileNameText.getText()!="") {
-                    progressBar.setValue(fileAppLayer.getFileStatus());
-                    progressBar.setStringPainted(true);
-                    Thread.sleep(0);
-                    if (fileAppLayer.getFileStatus() == 100) {
-                        progressBar.setValue(fileAppLayer.getFileStatus());
-                        break;
-                    }
-                }
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-                fileAppLayer.setFileStatus(0);
-            } finally {
-                try {
-                    if (fileAppLayer.getFileStatus() == 100) {
-                        fileAppLayer.setFileStatus(0);
-                    } else {
-                        fileAppLayer.setFileStatus(0);
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    fileAppLayer.setFileStatus(0);
-                }
-            }
+            ChattingArea.append(new String("[SEND] :" + data + "\n")); // 보내려는 메세지를 출력
+            chatLayer.Send(data.getBytes(), data.length()); // 아래계층인 챗앱레이어에 데이터 보냄
         }
+    }
+
+    class SendFile_Thread implements Runnable{
+        String data;
+        public SendFile_Thread (String input){
+            this.data = input;
+        }
+
+        @Override
+        public void run() {
+            String[] name = data.split("\\\\");
+            ChattingArea.append(new String("[SEND] :" + name[name.length - 1] + "을 전송합니다.\n"));
+            fileAppLayer.Send(data);
+        }
+    }
+
+    public void setSenderProgressBar(int file_status) {
+        progressBar.setValue(file_status);
+    }
+
+    public void setReceiverProgressBar(int max, int current) {
+        if ((int) ((float) current / (float) max * 100) == 100) {
+            progressBar.setValue((int) ((float) current / (float) max * 100));
+        } else {
+            progressBar.setValue((int) ((float) current / (float) max * 100));
+        }
+
     }
 
     public boolean Receive(byte[] input) {

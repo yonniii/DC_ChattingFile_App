@@ -1,4 +1,4 @@
-package stopwait;
+package chat_file;
 
 import java.util.ArrayList;
 
@@ -73,36 +73,27 @@ public class EthernetLayer implements BaseLayer {
         m_sHeader = new _ETHERNET_Frame();
         m_sHeader.enet_type[0] = (byte) 0x08;
     }
+    final int Ether_HEADER_SIZE = 14;
 
     public byte[] ObjToByte(_ETHERNET_Frame Header, int length) {
-        byte[] buf = new byte[length + 14]; //input보다 14 큰 배열 선언
+        byte[] buf = new byte[length + Ether_HEADER_SIZE]; //input보다 14 큰 배열 선언
         System.arraycopy(Header.enet_dstaddr.addr, 0, buf, 0, 6); //배열의 0~5인덱스에 dst주소 붙임
         System.arraycopy(Header.enet_srcaddr.addr, 0, buf, 6, 6);//배열의 6~11인덱스에 src주소 붙임
         buf[12] = Header.enet_type[0];
         buf[13] = Header.enet_type[1];
         for (int i = 0; i < length; i++) {
-            buf[i + 14] = Header.enet_data[i];
+            buf[i + Ether_HEADER_SIZE] = Header.enet_data[i];
         }
         return buf;
     }
 
-//    private boolean isChatType(byte[] input){ //chatHeader의 타입이 00~03은 chat 10~12는 file
-//        byte type = input[2];
-//        if(type<0x10){
-//            return true;
-//        }else{
-//            return false;
-//        }
-//    }
-
     private boolean SendChat(byte[] input, int length){
-//        int totlen = byteToint(input[0], input[1]);
         m_sHeader.enet_type[0] = (byte) 0x20; //chat이라고 타입(2080) 지정
         m_sHeader.enet_type[1] = (byte) 0x80;
         m_sHeader.enet_data = input;
         byte[] buf = ObjToByte(m_sHeader, length);//헤더를 붙이는 함수 호출
         System.out.println("Ethernet - ChatSend " + new String(buf));
-        this.GetUnderLayer().Send(buf, length + 14); //헤더를 붙인 데이터를 아래 레이어인 NILayer로 보냄
+        this.GetUnderLayer().Send(buf, length + Ether_HEADER_SIZE); //헤더를 붙인 데이터를 아래 레이어인 NILayer로 보냄
 
         m_sHeader.enet_data = null;
         return true;
@@ -114,7 +105,7 @@ public class EthernetLayer implements BaseLayer {
         m_sHeader.enet_data = input;
         byte[] buf = ObjToByte(m_sHeader, length);//헤더를 붙이는 함수 호출
         System.out.println("Ethernet - FileSend ");
-        this.GetUnderLayer().Send(buf, length + 14); //헤더를 붙인 데이터를 아래 레이어인 NILayer로 보냄
+        this.GetUnderLayer().Send(buf, length + Ether_HEADER_SIZE); //헤더를 붙인 데이터를 아래 레이어인 NILayer로 보냄
 
         m_sHeader.enet_data = null;
         return true;
@@ -127,9 +118,9 @@ public class EthernetLayer implements BaseLayer {
 
 
     public byte[] RemoveCappHeader(byte[] input, int length) {// receive할때 사용 / 헤더를 제거하는 함수
-        byte[] buf = new byte[length - 14];//배열에서 헤더 이후의 데이터만 옮겨서 리턴
-        for (int i = 0; i < length - 14; i++) {
-            buf[i] = input[i + 14];
+        byte[] buf = new byte[length - Ether_HEADER_SIZE];//배열에서 헤더 이후의 데이터만 옮겨서 리턴
+        for (int i = 0; i < length - Ether_HEADER_SIZE; i++) {
+            buf[i] = input[i + Ether_HEADER_SIZE];
         }
         return buf;
     }
@@ -185,7 +176,7 @@ public class EthernetLayer implements BaseLayer {
         MyPacket = IsItMyPacket(input);
 
         if (MyPacket == true) {
-//            return false;
+            return false;
         } else {
             Broadcast = IsItBroad(input);
             if (Broadcast == false) {
@@ -197,35 +188,27 @@ public class EthernetLayer implements BaseLayer {
         }
 
         if (input[12] == (byte) 0x20 && input[13] == (byte) 0x80) {
-//            byte[] ac = creatAck(input);
-//            System.out.println("ack는?");
-//            for (int i = 0; i < 14; i++) {
-//                System.out.print(ac[i] + " ");
-//            }
-//            System.out.println();
-//            niLayer.Send(creatAck(input), 14);
-//            System.out.println("Ethernet - Ack 보냄");
             System.out.println("Ethernet - Receive" + new String(input));
             chatAppLayer.Receive(RemoveCappHeader(input, input.length));
             return true;
         }
         else if(input[12] == (byte) 0x20 && input[13] == (byte) 0x90){
-            System.out.println("Ethernet - Receive" + new String(input));
+            System.out.println("Ethernet - Receive");
             fileAppLayer.Receive(RemoveCappHeader(input, input.length));
             return true;
         }
-        else if (input[12] == (byte) 0x08 && input[13] == (byte) 0x02) {
-            chatAppLayer.isReceiveACK_Chat = true;
-            System.out.println("Ethernet - Ack 받음");
-            return true;
-        }
+//        else if (input[12] == (byte) 0x08 && input[13] == (byte) 0x02) {
+//            chatAppLayer.isReceiveACK_Chat = true;
+//            System.out.println("Ethernet - Ack 받음");
+//            return true;
+//        }
         return false;
     }
 
 
 
     private byte[] creatAck(byte[] input) {
-        byte[] buf = new byte[14]; //input보다 14 큰 배열 선언
+        byte[] buf = new byte[Ether_HEADER_SIZE]; //input보다 14 큰 배열 선언
         System.arraycopy(m_sHeader.enet_dstaddr.addr, 0, buf, 0, 6); //배열의 0~5인덱스에 dst주소 붙임
         System.arraycopy(m_sHeader.enet_srcaddr.addr, 0, buf, 6, 6);//배열의 6~11인덱스에 src주소 붙임
         buf[12] = (byte) 0x08;

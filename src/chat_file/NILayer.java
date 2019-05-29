@@ -1,4 +1,4 @@
-package stopwait;
+package chat_file;
 
 import java.util.List;
 import java.nio.ByteBuffer;
@@ -8,7 +8,6 @@ import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.packet.PcapPacket;
 import org.jnetpcap.packet.PcapPacketHandler;
-import stopwait.BaseLayer;
 
 public class NILayer implements BaseLayer {
     public String pLayerName = null;
@@ -137,32 +136,4 @@ public class NILayer implements BaseLayer {
             }
         }
     }
-
-
-//    class SendFile_Thread implements Runnable {
-//        byte[] data;
-//        Pcap AdapterObject;
-//        BaseLayer UpperLayer;
-//
-//        public SendFile_Thread(Pcap m_AdapterObject, BaseLayer m_UpperLayer) {
-//            AdapterObject = m_AdapterObject;
-//            UpperLayer = m_UpperLayer;
-//        }
-//
-//        @Override
-//        public void run() {
-//            while(true) {
-//                PcapPacketHandler<String> jpacketHandler = new PcapPacketHandler<String>() {
-//                    public void nextPacket(PcapPacket packet, String user) {
-//                        data = packet.getByteArray(0, packet.size());
-//                        UpperLayer.Receive(data);
-//                    }
-//                };
-//
-//                AdapterObject.loop(100000,jpacketHandler,"");
-//            }
-//        }
-//    }
-
-
 }
