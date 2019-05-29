@@ -176,7 +176,7 @@ public class EthernetLayer implements BaseLayer {
         MyPacket = IsItMyPacket(input);
 
         if (MyPacket == true) {
-//            return false;
+            return false;
         } else {
             Broadcast = IsItBroad(input);
             if (Broadcast == false) {
