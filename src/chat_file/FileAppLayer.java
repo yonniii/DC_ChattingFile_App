@@ -251,7 +251,8 @@ public class FileAppLayer implements BaseLayer {
         return buf;
     }
 
-    public int Received_packet_count=0;
+    public int Received_packet_count = 0;
+    private int receivedcount = 0;
 
     public synchronized boolean Receive(byte[] input) {
         if (input.length < 12)
@@ -278,11 +279,18 @@ public class FileAppLayer implements BaseLayer {
                 System.out.println("FileApp - Receive 0x12 "+ int_seq_num + "번째 패킷");
                 System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, int_last_packet_size);
                 System.out.println(temp_filename);
-                OutputFile();
-                Received_packet_count++;
-                String msg = temp_filename + "을 받았습니다.";
-                this.GetUpperLayer(0).Receive(msg.getBytes());
-                receive_data_buffer = null;
+                receivedcount += int_last_packet_size;
+
+                if (receivedcount == int_Data_totlen) {
+                    OutputFile();
+                    Received_packet_count++;
+                    String msg = temp_filename + "을 받았습니다.";
+                    this.GetUpperLayer(0).Receive(msg.getBytes());
+                    receive_data_buffer = null;
+                }
+
+//                receivedcount+=
+
             } else { //처음~중간 패킷일 때
                 if(Arrays.equals(byte_Packet_type,PACKET_TYPE_FIRST)){
                     receive_data_buffer = new byte[int_Data_totlen];
@@ -290,6 +298,8 @@ public class FileAppLayer implements BaseLayer {
                 System.out.println("FileApp - Receive 0x11 / 0x12 " + int_seq_num + "번째 패킷");
                 System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, MAX_DATA_SIZE);
                 Received_packet_count++;
+                receivedcount += MAX_DATA_SIZE;
+
             }
 
         } else {
