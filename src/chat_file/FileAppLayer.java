@@ -223,8 +223,7 @@ public class FileAppLayer implements BaseLayer {
 //        }
 //    }
 
-    String temp_filename;
-    byte[] receive_data_buffer;
+
     private void OutputFile() {
         BufferedOutputStream bs = null;
         try {
