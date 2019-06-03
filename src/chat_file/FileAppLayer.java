@@ -286,13 +286,7 @@ public class FileAppLayer implements BaseLayer {
                 System.out.println(temp_filename);
                 Received_data_count += int_last_packet_size;
 
-                if (receivedcount == int_Data_totlen) {
-                    OutputFile();
-                    Received_packet_count++;
-                    String msg = temp_filename + "을 받았습니다.";
-                    this.GetUpperLayer(0).Receive(msg.getBytes());
-                    receive_data_buffer = null;
-                }
+
 
 //                receivedcount+=
 
