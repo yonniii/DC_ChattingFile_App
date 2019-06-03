@@ -274,6 +274,10 @@ public class FileAppLayer implements BaseLayer {
             return true;
         }
 
+        if(msg_type!=(byte)0x01){
+            return false;
+        }
+
         if (int_Data_totlen > MAX_DATA_SIZE) {
 
             if (Arrays.equals(byte_Packet_type, PACKET_TYPE_LAST)) { //마지막 패킷일 때
