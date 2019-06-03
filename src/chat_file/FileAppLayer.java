@@ -251,8 +251,10 @@ public class FileAppLayer implements BaseLayer {
         return buf;
     }
 
-    public int Received_packet_count = 0;
-    private int receivedcount = 0;
+    public int Received_packet_count = 0; //이제까지 받은 패킷의 개수를 count, 프로그레스바 업데이트에 사용
+    private int Received_data_count = 0; //이제까지 받은 데이터의 크기를 count, 데이터를 다 받았는지 확인할 때 사용
+    String temp_filename; //파일의 이름을 받았을 때 저장해두기 위한 변수
+    byte[] receive_data_buffer; //데이터를 받았을 때 버퍼에 담기 위한 배열
 
     public synchronized boolean Receive(byte[] input) {
         if (input.length < 12)
@@ -279,7 +281,7 @@ public class FileAppLayer implements BaseLayer {
                 System.out.println("FileApp - Receive 0x12 "+ int_seq_num + "번째 패킷");
                 System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, int_last_packet_size);
                 System.out.println(temp_filename);
-                receivedcount += int_last_packet_size;
+                Received_data_count += int_last_packet_size;
 
                 if (receivedcount == int_Data_totlen) {
                     OutputFile();
@@ -298,8 +300,16 @@ public class FileAppLayer implements BaseLayer {
                 System.out.println("FileApp - Receive 0x11 / 0x12 " + int_seq_num + "번째 패킷");
                 System.arraycopy(input, HEADER_SIZE, receive_data_buffer, int_seq_num * MAX_DATA_SIZE, MAX_DATA_SIZE);
                 Received_packet_count++;
-                receivedcount += MAX_DATA_SIZE;
+                Received_data_count += MAX_DATA_SIZE;
 
+            }
+
+            if (Received_data_count == int_Data_totlen) {
+                OutputFile();
+                Received_packet_count++;
+                String msg = temp_filename + "을 받았습니다.";
+                this.GetUpperLayer(0).Receive(msg.getBytes());
+                receive_data_buffer = null;
             }
 
         } else {
